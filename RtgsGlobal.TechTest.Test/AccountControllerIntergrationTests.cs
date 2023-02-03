@@ -95,4 +95,75 @@ public class AccountControllerIntergrationTests : IClassFixture<WebApplicationFa
 		// assert
 		Assert.Equal(HttpStatusCode.NotFound, result.StatusCode);
 	}
+
+	[Fact]
+	public async Task GivenAccountDoesNotExist_WhenWithdrawAttemptIsMade_ThenShouldReturnNotFound()
+	{
+		// arrange
+		// act 
+		var result = await _client.PostAsJsonAsync("/account/account-that-does-not-exist/withdraw", "1000");
+
+		// assert
+		Assert.Equal(HttpStatusCode.NotFound, result.StatusCode);
+	}
+
+	[Fact]
+	public async Task GivenAccountDoesNotExist_WhenTransferAttemptIsMade_ThenShouldReturnBadRequestWithErrorMessae()
+	{
+		// arrange
+		var dto = new LoanTransferDto("account-that-does-not-exist", "account-b", 1000);
+		var errorMessage = "error: invalid account identifier";
+
+		// act 
+		var result = await _client.PostAsJsonAsync("/account/transfer", dto);
+
+		// assert
+		Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+		Assert.Equal(errorMessage, await result.Content.ReadAsStringAsync());
+	}
+
+	[Fact]
+	public async Task GivenAccountExists_WhenNegativeDepositIsAttempted_ThenShouldReturnBadRequestWithErrorMessage()
+	{
+		// arrange
+		var errorMessage = "error: cannot deposit less than 0";
+
+		// act
+		var result = await _client.PostAsJsonAsync("/account/account-a", "-1000");
+
+		// assert
+		Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+		Assert.Equal(errorMessage, await result.Content.ReadAsStringAsync());
+	}
+
+	[Fact]
+	public async Task GivenAccountExists_WhenTransferToSameAccountIsAttempted_ThenShouldReturnBadRequestWithErrorMessage()
+	{
+		// arrange
+		var errorMessage = "error: cannot transfer to same account";
+		var dto = new LoanTransferDto("account-a", "account-a", 1000);
+
+		// act
+		var result = await _client.PostAsJsonAsync("/account/transfer", dto);
+
+		// assert
+		Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+		Assert.Equal(errorMessage, await result.Content.ReadAsStringAsync());
+	}
+
+	[Fact]	
+	public async Task GivenAccountExists_WhenWithdrawingMoreThanBalance_ThenShouldReturnBadRequestWithErrorMessage()
+	{
+		// arrange
+		var errorMessage = "error: cannot withdraw more than balance";
+
+		// act
+		await _client.PostAsJsonAsync("/account/account-a", "1000");
+		var result = await _client.PostAsJsonAsync("/account/account-a/withdraw", "2000");
+
+		// assert
+		Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
+		Assert.Equal(errorMessage, await result.Content.ReadAsStringAsync());
+
+	}
 }

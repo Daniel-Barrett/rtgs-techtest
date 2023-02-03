@@ -3,6 +3,9 @@ using RtgsGlobal.TechTest.Api.Models.DTOs;
 
 namespace RtgsGlobal.TechTest.Api.Services;
 
+/// <summary>
+/// Provides the functions to interact with an Account
+/// </summary>
 public class AccountProvider : IAccountProvider
 {
 	private readonly IDictionary<string, AccountBalance> _accounts;
@@ -14,20 +17,25 @@ public class AccountProvider : IAccountProvider
 
 	public AccountBalance GetBalance(string accountIdentifier)
 	{
-		//ThrowIfAccountDoesNotExist(accountIdentifier);
 		return _accounts[accountIdentifier];
 	}
 
 	public void Deposit(string accountIdentifier, decimal amount)
 	{
-		ThrowIfAccountDoesNotExist(accountIdentifier);
+		if(amount < 0)
+		{
+			throw new ArgumentOutOfRangeException();
+		}
+
 		AddTransaction(accountIdentifier, amount);
 	}
 
 	public void Transfer(LoanTransferDto transfer)
 	{
-		ThrowIfAccountDoesNotExist(transfer.DebtorAccountIdentifier);
-		ThrowIfAccountDoesNotExist(transfer.CreditorAccountIdentifier);
+		if(transfer.CreditorAccountIdentifier == transfer.DebtorAccountIdentifier)
+		{
+			throw new ArgumentException(nameof(transfer));
+		}
 
 		AddTransaction(transfer.DebtorAccountIdentifier, -transfer.Amount);
 		AddTransaction(transfer.CreditorAccountIdentifier, transfer.Amount);
@@ -35,7 +43,13 @@ public class AccountProvider : IAccountProvider
 
 	public void Withdraw(string accountIdentifier, decimal amount)
 	{
-		ThrowIfAccountDoesNotExist(accountIdentifier);
+		var currentBalance = GetBalance(accountIdentifier);
+
+		if(currentBalance.Balance < amount)
+		{
+			throw new ArgumentException(nameof(amount));
+		}
+
 		AddTransaction(accountIdentifier, -1 * amount);
 	}
 
@@ -44,13 +58,5 @@ public class AccountProvider : IAccountProvider
 		AccountBalance accountBalance = _accounts[accountIdentifier];
 		_accounts[accountIdentifier] =
 			accountBalance with { Balance = accountBalance.Balance + amount };
-	}
-
-	private void ThrowIfAccountDoesNotExist(string accountIdentifier)
-	{
-		if (!_accounts.ContainsKey(accountIdentifier))
-		{
-			throw new KeyNotFoundException(nameof(accountIdentifier));
-		}
 	}
 }

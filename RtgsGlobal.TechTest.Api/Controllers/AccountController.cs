@@ -16,6 +16,11 @@ public class AccountController : ControllerBase
 		_accountProvider = accountProvider;
 	}
 
+	/// <summary>
+	/// Deposit given amount to a given account
+	/// </summary>
+	/// <param name="accountIdentifier"></param>
+	/// <param name="amount"></param>
 	[HttpPost("{accountIdentifier}", Name = "Deposit")]
 	public async Task<IActionResult> Deposit(string accountIdentifier, [FromBody] decimal amount)
 	{
@@ -28,12 +33,17 @@ public class AccountController : ControllerBase
 		{
 			return NotFound();
 		}
-		catch (Exception)
+		catch (ArgumentOutOfRangeException)
 		{
-			return BadRequest("error: invalid account identifier");
+			return BadRequest("error: cannot deposit less than 0");
 		}
 	}
 
+	/// <summary>
+	/// Withdraw a given amount from a given account
+	/// </summary>
+	/// <param name="accountIdentifier"></param>
+	/// <param name="amount"></param>
 	[HttpPost("{accountIdentifier}/withdraw", Name = "Withdrawal")]
 	public async Task<IActionResult> Withdraw(string accountIdentifier, [FromBody] decimal amount)
 	{
@@ -46,12 +56,16 @@ public class AccountController : ControllerBase
 		{
 			return NotFound();
 		}
-		catch (Exception)
+		catch (ArgumentException)
 		{
-			return BadRequest("error: invalid account identifier");
+			return BadRequest("error: cannot withdraw more than balance");
 		}
 	}
 
+	/// <summary>
+	/// Transfer a given value between two given accounts
+	/// </summary>
+	/// <param name="transfer"></param>
 	[HttpPost("transfer", Name = "Transfer")]
 	public async Task<IActionResult> Transfer(LoanTransferDto transfer)
 	{
@@ -62,14 +76,19 @@ public class AccountController : ControllerBase
 		}
 		catch (KeyNotFoundException)
 		{
-			return NotFound();
-		}
-		catch (Exception)
-		{
 			return BadRequest("error: invalid account identifier");
+		}
+		catch (ArgumentException)
+		{
+			return BadRequest("error: cannot transfer to same account");
 		}
 	}
 
+	/// <summary>
+	/// Get the balance for a given account
+	/// </summary>
+	/// <param name="accountIdentifier"></param>
+	/// <returns>Balance</returns>
 	[HttpGet("{accountIdentifier}", Name = "GetBalance")]
 	public async Task<IActionResult> Get(string accountIdentifier)
 	{
