@@ -1,4 +1,7 @@
+using System.Security.Cryptography.Xml;
 using Microsoft.AspNetCore.Mvc;
+using RtgsGlobal.TechTest.Api.Models.DTOs;
+using RtgsGlobal.TechTest.Api.Services;
 
 namespace RtgsGlobal.TechTest.Api.Controllers;
 
@@ -14,40 +17,70 @@ public class AccountController : ControllerBase
 	}
 
 	[HttpPost("{accountIdentifier}", Name = "Deposit")]
-	public IActionResult Deposit(string accountIdentifier, [FromBody] float amount)
+	public async Task<IActionResult> Deposit(string accountIdentifier, [FromBody] decimal amount)
 	{
-		_accountProvider.Deposit(accountIdentifier, amount);
-		return Ok();
+		try
+		{
+			_accountProvider.Deposit(accountIdentifier, amount);
+			return Ok();
+		}
+		catch (KeyNotFoundException)
+		{
+			return NotFound();
+		}
+		catch (Exception)
+		{
+			return BadRequest("error: invalid account identifier");
+		}
 	}
 
 	[HttpPost("{accountIdentifier}/withdraw", Name = "Withdrawal")]
-	public IActionResult Withdraw(string accountIdentifier, [FromBody] float amount)
+	public async Task<IActionResult> Withdraw(string accountIdentifier, [FromBody] decimal amount)
 	{
-		_accountProvider.Withdraw(accountIdentifier, amount);
-		return Ok();
+		try
+		{
+			_accountProvider.Withdraw(accountIdentifier, amount);
+			return Ok();
+		}
+		catch (KeyNotFoundException)
+		{
+			return NotFound();
+		}
+		catch (Exception)
+		{
+			return BadRequest("error: invalid account identifier");
+		}
 	}
 
 	[HttpPost("transfer", Name = "Transfer")]
-	public IActionResult Transfer(MyTransferDto transfer)
+	public async Task<IActionResult> Transfer(LoanTransferDto transfer)
 	{
-		_accountProvider.Transfer(transfer);
-		return Accepted();
+		try
+		{
+			_accountProvider.Transfer(transfer);
+			return Ok();
+		}
+		catch (KeyNotFoundException)
+		{
+			return NotFound();
+		}
+		catch (Exception)
+		{
+			return BadRequest("error: invalid account identifier");
+		}
 	}
 
 	[HttpGet("{accountIdentifier}", Name = "GetBalance")]
-	public MyBalance Get(string accountIdentifier) => _accountProvider.GetBalance(accountIdentifier);
-}
-
-public class MyTransferDto
-{
-	public MyTransferDto(string debtorAccountIdentifier, string creditorAccountIdentifier, float amount)
+	public async Task<IActionResult> Get(string accountIdentifier)
 	{
-		DebtorAccountIdentifier = debtorAccountIdentifier;
-		CreditorAccountIdentifier = creditorAccountIdentifier;
-		Amount = amount;
+		try
+		{
+			var balance = _accountProvider.GetBalance(accountIdentifier);
+			return Ok(balance);
+		}
+		catch (KeyNotFoundException)
+		{
+			return NotFound();
+		}
 	}
-
-	public string DebtorAccountIdentifier { get; set; }
-	public string CreditorAccountIdentifier { get; set; }
-	public float Amount { get; set; }
 }

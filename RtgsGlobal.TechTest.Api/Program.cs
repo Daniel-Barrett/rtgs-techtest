@@ -1,4 +1,4 @@
-using RtgsGlobal.TechTest.Api;
+using RtgsGlobal.TechTest.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
